@@ -112,23 +112,33 @@ class VideoIndexer(object):
         self.anotated = data_path + "/anotated"
 
     def index_video(self, video_path, meta_path):
+
+        if not (os.exists(video_path) and os.exists(meta_path)):
+            print("Cannot find either " + video_path + " or " + meta_path)
+            return
+        
         video_name = video_path.split("/")[-1]
-        shutil.copy(video_path, self.raw + "/" + video_name)
         
         videos = self.db["videos"]
-        videos.append(video_name)
-        self.db["videos"] = videos
-        
-        index = anotate_video(video_path, meta_path, self.anotated + "/" + video_name)
-        self.db[video_name] = index
 
-        for object_type, object_id, position in index:
-            if not self.db.has_key(object_type):
-                self.db[object_type] = []
-                
-            curr = self.db[object_type]
-            curr.append((video_name, object_id, position))
-            self.db[object_type] = curr
+        if not video_name in set(videos):        
+            videos.append(video_name)
+            self.db["videos"] = videos
+
+            shutil.copy(video_path, self.raw + "/" + video_name)
+
+            index = anotate_video(video_path, meta_path, self.anotated + "/" + video_name)
+            self.db[video_name] = index
+
+            for object_type, object_id, position in index:
+                if not self.db.has_key(object_type):
+                    self.db[object_type] = []
+
+                curr = self.db[object_type]
+                curr.append((video_name, object_id, position))
+                self.db[object_type] = curr
+        else:
+            print("A video named " + video_name + " already exists, not performing any operation.")    
             
     def list_videos(self):
         return self.db["videos"]
