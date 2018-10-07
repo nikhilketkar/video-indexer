@@ -42,7 +42,12 @@ def index_video(video_path, meta_path, images_path):
         
 def build_video(video_path, index_path, output_path):
     images_list = [index_path + "/" + i for i in sorted(os.listdir(index_path), key = lambda x: int(x.replace(".png", "")))]
-    labeled_clips = [moviepy.editor.ImageClip(i) for i in images_list]
+
+    labeled_clips = []
+    for i in images_list:
+        labelled_clip = moviepy.editor.CompositeVideoClip([moviepy.editor.ImageClip(i)]).set_duration(0.5)
+        labeled_clips.append(labelled_clip)
+    
     timestamps = [float(i.replace(".png", "")) for i in sorted(os.listdir(index_path), key = lambda x: int(x.replace(".png", "")))]
     
     clips = []
@@ -60,7 +65,7 @@ def build_video(video_path, index_path, output_path):
         print "Done:", timestamps[i]
     
     result_clip = moviepy.editor.concatenate_videoclips(clips)
-    result_clip.write_videofile(output_path + ".mp4")
+    result_clip.write_videofile(output_path)
 
     
     
