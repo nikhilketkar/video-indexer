@@ -44,7 +44,7 @@ def index_video(video_path, meta_path, images_path):
                            (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX,0.8, (0, 255, 0), 2, cv2.LINE_AA)
 
                 padding += 1.0
-                index.append((frame_object["class_name"], frame_object["object_id"], timestamp + 0.75 * padding))
+                index.append((frame_object["class_name"], frame_object["object_id"], timestamp + 0.5 * padding))
         cv2.imwrite(images_path + "/" + str(int(timestamp)) + ".png", image)
     return index
         
@@ -54,7 +54,7 @@ def build_video(video_path, index_path, output_path):
 
     labeled_clips = []
     for i in images_list:
-        labelled_clip = moviepy.editor.CompositeVideoClip([moviepy.editor.ImageClip(i)]).set_duration(0.75)
+        labelled_clip = moviepy.editor.CompositeVideoClip([moviepy.editor.ImageClip(i)]).set_duration(0.5)
         labeled_clips.append(labelled_clip)
     
     timestamps = [float(i.replace(".png", "")) for i in sorted(os.listdir(index_path), key = lambda x: int(x.replace(".png", "")))]
