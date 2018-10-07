@@ -1,4 +1,5 @@
 import os
+import shutil 
 import moviepy.editor
 import pandas
 import numpy
@@ -20,6 +21,8 @@ def process_meta(meta_path):
 def index_video(video_path, meta_path, images_path):
     framemetas = process_meta(meta_path)
     movie = moviepy.editor.VideoFileClip(video_path)
+    index = []
+    padding = 0.0
     for timestamp, frame_objects in framemetas:
         image = movie.to_ImageClip(t=timestamp)
         image_x, image_y = image.size
@@ -38,7 +41,10 @@ def index_video(video_path, meta_path, images_path):
                            "(" + frame_object["class_name"] + "," + str(frame_object["object_id"]) + ")",
                            (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX,0.8, (0, 255, 0), 2, cv2.LINE_AA)
 
+                padding += 1.0
+                index.append((frame_object["class_name"], frame_object["object_id"], timestamp + 0.5 * padding))
         cv2.imwrite(images_path + "/" + str(int(timestamp)) + ".png", image)
+    return index
         
 def build_video(video_path, index_path, output_path):
     images_list = [index_path + "/" + i for i in sorted(os.listdir(index_path), key = lambda x: int(x.replace(".png", "")))]
@@ -52,7 +58,7 @@ def build_video(video_path, index_path, output_path):
     
     clips = []
     first = True
-    print timestamps
+
     for i in range(0, len(timestamps)):
         if first:
             first = False
@@ -62,12 +68,23 @@ def build_video(video_path, index_path, output_path):
 
         clips.append(curr_clip)
         clips.append(labeled_clips[i])
-        print "Done:", timestamps[i]
+
+    maxd = moviepy.editor.VideoFileClip(video_path).duration
+    curr_clip = moviepy.editor.VideoFileClip(video_path).subclip(timestamps[-1], maxd)
+    clips.append(curr_clip)
     
     result_clip = moviepy.editor.concatenate_videoclips(clips)
     result_clip.write_videofile(output_path)
 
-    
-    
+def anotate_video(input_video_path, input_meta_path, output_video_path):
+    os.mkdir("/tmp/video-index")
+    index = index_video(input_video_path, input_meta_path, "/tmp/video-index")
+    build_video(input_video_path, "/tmp/video-index", output_video_path)
+    shutil.rmtree("/tmp/video-index")
+    return index
+
+def subclip(input_video_path, pos, output_video_path):
+    result_clip = moviepy.editor.VideoFileClip(input_video_path).subclip(float(pos - 1), float(pos + 1))
+    result_clip.write_videofile(output_video_path)
     
     
