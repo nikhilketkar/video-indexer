@@ -4,6 +4,7 @@ import moviepy.editor
 import pandas
 import numpy
 import cv2
+import shelve
 
 def process_meta(meta_path):
     df = pandas.read_csv(meta_path)
@@ -87,4 +88,53 @@ def subclip(input_video_path, pos, output_video_path):
     result_clip = moviepy.editor.VideoFileClip(input_video_path).subclip(float(pos - 1), float(pos + 1))
     result_clip.write_videofile(output_video_path)
     
+class VideoIndexer(object):
+    def __init__(self, data_path):
+        self.data_path = data_path
+        
+        if not os.path.isdir(data_path):
+            os.mkdir(data_path)
+            os.mkdir(data_path + "/raw")
+            os.mkdir(data_path + "/anotated")
+            self.db = shelve.open(data_path + "/meta.db")
+            videos = self.db["videos"]
+            self.db.close()
+
+        self.db = shelve.open(data_path + "/meta.db")
+        self.raw = data_path + "/raw"
+        self.anotated = data_path + "/anotated"
+
+    def index_video(self, video_path, meta_path):
+        video_name = video_path.split("/")[-1]
+        shutil.copy(video_path, self.raw + "/" + video_name)
+        
+        videos = self.db["videos"]
+        videos.append(video_name)
+        self.db["videos"] = videos
+        
+        index = anotate_video(video_path, meta_path, self.anotated + "/" + video_name)
+        self.db[video_name] = index
+
+        for object_type, object_id, position in index:
+            if not self.db.has_key(object_type):
+                self.db[object_type] = []
+                
+            curr = self.db[object_type]
+            curr.append((anotated_video_path, object_id, position))
+            self.db[object_type] = curr
+            
+    def list_videos(self):
+        return self.db["videos"]
+
+    def search_object(self, object_type):
+        if self.db.has_key(object_type):
+            return self.db[object_type]
+
+    def search_video(self, video_name, time_duration):
+        pass
     
+    
+
+
+            
+        
