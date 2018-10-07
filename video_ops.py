@@ -84,10 +84,14 @@ def anotate_video(input_video_path, input_meta_path, output_video_path):
     shutil.rmtree("/tmp/video-index")
     return index
 
-def subclip(input_video_path, pos, output_video_path):
+def subclip_around(input_video_path, pos, output_video_path):
     result_clip = moviepy.editor.VideoFileClip(input_video_path).subclip(float(pos - 1), float(pos + 1))
     result_clip.write_videofile(output_video_path)
-    
+
+def subclip(input_video_path, start, stop, output_video_path):
+    result_clip = moviepy.editor.VideoFileClip(input_video_path).subclip(float(start), float(stop))
+    result_clip.write_videofile(output_video_path)
+
 class VideoIndexer(object):
     def __init__(self, data_path):
         self.data_path = data_path
@@ -96,11 +100,11 @@ class VideoIndexer(object):
             os.mkdir(data_path)
             os.mkdir(data_path + "/raw")
             os.mkdir(data_path + "/anotated")
-            self.db = shelve.open(data_path + "/meta.db")
-            videos = self.db["videos"]
+            self.db = shelve.open(data_path + "/meta")
+            self.db["videos"] = []
             self.db.close()
 
-        self.db = shelve.open(data_path + "/meta.db")
+        self.db = shelve.open(data_path + "/meta")
         self.raw = data_path + "/raw"
         self.anotated = data_path + "/anotated"
 
@@ -120,7 +124,7 @@ class VideoIndexer(object):
                 self.db[object_type] = []
                 
             curr = self.db[object_type]
-            curr.append((anotated_video_path, object_id, position))
+            curr.append((video_name, object_id, position))
             self.db[object_type] = curr
             
     def list_videos(self):
@@ -130,8 +134,23 @@ class VideoIndexer(object):
         if self.db.has_key(object_type):
             return self.db[object_type]
 
-    def search_video(self, video_name, time_duration):
-        pass
+    def search_video(self, video_name, start, stop):
+        result = []
+        videos = set(self.db["videos"])
+        if video_name in videos:
+            video_contents = self.db[video_name]
+            for object_type, object_id, time_stamp in video_contents:
+                if time_stamp > start and time_stamp < stop:
+                    result.append((object_type, object_id, time_stamp))
+        return result
+
+    def generate_segment(self, video_name, start, stop, output_video_path):
+        subclip(self.anotated + "/" + video_name, start, stop, output_video_path)
+
+    def generate_object_segment(self, video_name, pos, output_video_path):
+        subclip_around(self.anotated + "/" + video_name, pos, output_video_path)
+
+    
     
     
 
