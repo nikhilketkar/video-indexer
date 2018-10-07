@@ -1,5 +1,7 @@
+Provides the following functionality
 ```
 > invoke --list
+
 Available tasks:
 
  export-object    export_object(video_name, pos, output_path) -> exported_video_file
@@ -10,5 +12,11 @@ Available tasks:
  list-videos      list_videos() -> [video_file]
  search-object    search_object(object_type) -> [video_file, id, position]
  search-video     search_video(video_name, pos, output_path) -> [object, position]
+```
+
+Use the following to get more details
+
+```
+> invoke --help [task-name]
 
 ```
