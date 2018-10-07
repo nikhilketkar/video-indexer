@@ -1,11 +1,14 @@
+import os
 import moviepy.editor
 import pandas
+import numpy
 import cv2
 
 def process_meta(meta_path):
     df = pandas.read_csv(meta_path)
     df.columns = ["timestamp_ms", "class_name", "object_id", "object_presence", "xmin", "xmax", "ymin", "ymax"]
     df["timestamp"] = df["timestamp_ms"]/1000.0
+    df = df[df["object_presence"] == "present"]
     result = []
     for name, group in df.groupby(["timestamp"]):
         curr_result = []
@@ -18,7 +21,6 @@ def index_video(video_path, meta_path, images_path):
     framemetas = process_meta(meta_path)
     movie = moviepy.editor.VideoFileClip(video_path)
     for timestamp, frame_objects in framemetas:
-        print timestamp
         image = movie.to_ImageClip(t=timestamp)
         image_x, image_y = image.size
         image.save_frame("/tmp/temp.png")
@@ -37,13 +39,28 @@ def index_video(video_path, meta_path, images_path):
                            (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX,0.8, (0, 255, 0), 2, cv2.LINE_AA)
 
         cv2.imwrite(images_path + "/" + str(int(timestamp)) + ".png", image)
+        
+def build_video(video_path, index_path, output_path):
+    images_list = [index_path + "/" + i for i in sorted(os.listdir(index_path), key = lambda x: int(x.replace(".png", "")))]
+    labeled_clips = [moviepy.editor.ImageClip(i) for i in images_list]
+    timestamps = [float(i.replace(".png", "")) for i in sorted(os.listdir(index_path), key = lambda x: int(x.replace(".png", "")))]
+    
+    clips = []
+    first = True
+    print timestamps
+    for i in range(0, len(timestamps)):
+        if first:
+            first = False
+            curr_clip = moviepy.editor.VideoFileClip(video_path).subclip(0.0, timestamps[i])
+        else:
+            curr_clip = moviepy.editor.VideoFileClip(video_path).subclip(timestamps[i - 1], timestamps[i])
 
-def build_video(images_path, min_value, max_value, video_path):
-    images_list = []
-    for i in range(min_value, max_value + 1):
-        images_list.append(images_path + "/" + str(i) + ".png")
-    clip = moviepy.editor.ImageSequenceClip(images_list, fps=30)
-    clip.write_videofile(video_path + ".mp4")
+        clips.append(curr_clip)
+        clips.append(labeled_clips[i])
+        print "Done:", timestamps[i]
+    
+    result_clip = moviepy.editor.concatenate_videoclips(clips)
+    result_clip.write_videofile(output_path + ".mp4")
 
     
     
