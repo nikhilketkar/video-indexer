@@ -113,7 +113,7 @@ class VideoIndexer(object):
 
     def index_video(self, video_path, meta_path):
 
-        if not (os.exists(video_path) and os.exists(meta_path)):
+        if not (os.path.isfile(video_path) and os.path.isfile(meta_path)):
             print("Cannot find either " + video_path + " or " + meta_path)
             return
         
