@@ -64,5 +64,5 @@ def export_object(c, video_name, pos, output_path):
 @task
 def export_segment(c, video_name, start, stop, output_path):
     vi = init()
-    vi.generate_object_segment(video_name, float(start), float(stop), output_path)
+    vi.generate_segment(video_name, float(start), float(stop), output_path)
 
